@@ -689,6 +689,11 @@ func resourceVmQemu() *schema.Resource {
 				Computed:    true,
 				Description: "Use to track vm ipv4 address",
 			},
+			"default_ipv6_address": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Use to track vm ipv4 address",
+			},
 			"define_connection_info": { // by default define SSH for provisioner info
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -1746,6 +1751,7 @@ func initConnInfo(
 	log.Print("[DEBUG][initConnInfo] trying to get vm ip address for provisioner")
 	sshPort := "22"
 	sshHost := ""
+	sshHost6 := ""
 	// assume guest agent not running yet or not enabled
 	guestAgentRunning := false
 
@@ -1796,10 +1802,18 @@ func initConnInfo(
 							log.Printf("[DEBUG][initConnInfo] Found IP address: %s", addr.String())
 							sshHost = addr.String()
 						}
+						if addr.IsGlobalUnicast() && strings.Count(addr.String(), ":") > 2 {
+							log.Printf("[DEBUG][initConnInfo] Found IPv6 address: %s", addr.String())
+							sshHost6 = addr.String()
+
+						}
 					}
 				}
 			}
 			if sshHost != "" {
+				break
+			}
+			if sshHost6 != "" {
 				break
 			}
 		}
@@ -1808,6 +1822,7 @@ func initConnInfo(
 	// todo - log a warning if we couldn't get an IP
 
 	d.Set("default_ipv4_address", sshHost)
+	d.Set("default_ipv6_address", sshHost6)
 
 	if config.HasCloudInit() {
 		log.Print("[DEBUG][initConnInfo] vm has a cloud-init configuration")
@@ -1850,7 +1865,7 @@ func initConnInfo(
 
 	// Done with proxmox API, end parallel and do the SSH things
 	//lock.unlock()
-	if sshHost == "" {
+	if sshHost == "" && sshHost6 == "" {
 		return fmt.Errorf("cannot find any IP address")
 	}
 
