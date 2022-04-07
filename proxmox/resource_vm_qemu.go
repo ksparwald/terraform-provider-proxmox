@@ -692,7 +692,7 @@ func resourceVmQemu() *schema.Resource {
 			"default_ipv6_address": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Use to track vm ipv4 address",
+				Description: "Use to track vm ipv6 address",
 			},
 			"define_connection_info": { // by default define SSH for provisioner info
 				Type:     schema.TypeBool,
@@ -1810,10 +1810,7 @@ func initConnInfo(
 					}
 				}
 			}
-			if sshHost != "" {
-				break
-			}
-			if sshHost6 != "" {
+			if sshHost != "" || sshHost6 != ""{
 				break
 			}
 		}
@@ -1870,7 +1867,11 @@ func initConnInfo(
 	}
 
 	// Optional convience attributes for provisioners
-	d.Set("ssh_host", sshHost)
+	if sshHost != "" {
+		d.Set("ssh_host", sshHost)
+	} else if sshHost6 != "" {
+		d.Set("ssh_host", sshHost6)
+	}
 	d.Set("ssh_port", sshPort)
 
 	// This connection INFO is longer shared up to the providers :-(
