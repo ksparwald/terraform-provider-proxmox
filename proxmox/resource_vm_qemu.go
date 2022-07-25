@@ -75,6 +75,12 @@ func resourceVmQemu() *schema.Resource {
 				Default:     false,
 				Description: "VM autostart on boot",
 			},
+			"startup": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "",
+				Description: "Startup order of the VM",
+			},
 			"oncreate": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -328,7 +334,7 @@ func resourceVmQemu() *schema.Resource {
 							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 								v := val.(string)
 								if !(strings.Contains(v, "G") || strings.Contains(v, "M") || strings.Contains(v, "K")) {
-									errs = append(errs, fmt.Errorf("disk size must end in G, M, or K, got %s", v))
+									errs = append(errs, fmt.Errorf("disk size must end with G, M, or K, got %s", v))
 								}
 								return
 							},
@@ -682,7 +688,7 @@ func resourceVmQemu() *schema.Resource {
 			"reboot_required": {
 				Type:        schema.TypeBool,
 				Computed:    true,
-				Description: "Internal variable, true if any of the modified parameters require a reboot to take effect.",
+				Description: "Internal variable, true if any of the modified parameters requires a reboot to take effect.",
 			},
 			"default_ipv4_address": {
 				Type:        schema.TypeString,
@@ -709,7 +715,7 @@ func resourceVmQemu() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,
-				Description: "Automatically reboot the VM if any of the modified parameters require a reboot to take effect.",
+				Description: "Automatically reboot the VM if any of the modified parameters requires a reboot to take effect.",
 			},
 		},
 		Timeouts: resourceTimeouts(),
@@ -748,6 +754,7 @@ func resourceVmQemuCreate(d *schema.ResourceData, meta interface{}) error {
 		Pool:         d.Get("pool").(string),
 		Bios:         d.Get("bios").(string),
 		Onboot:       d.Get("onboot").(bool),
+		Startup:	  d.Get("startup").(string),
 		Tablet:       d.Get("tablet").(bool),
 		Boot:         d.Get("boot").(string),
 		BootDisk:     d.Get("bootdisk").(string),
@@ -1056,6 +1063,7 @@ func resourceVmQemuUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 		Pool:         d.Get("pool").(string),
 		Bios:         d.Get("bios").(string),
 		Onboot:       d.Get("onboot").(bool),
+		Startup:      d.Get("startup").(string),
 		Tablet:       d.Get("tablet").(bool),
 		Boot:         d.Get("boot").(string),
 		BootDisk:     d.Get("bootdisk").(string),
@@ -1332,6 +1340,7 @@ func _resourceVmQemuRead(d *schema.ResourceData, meta interface{}) error {
 	// by calling a SetId("")
 	_, err = client.GetVmInfo(vmr)
 	if err != nil {
+		logger.Debug().Int("vmid", vmID).Err(err).Msg("failed to get vm info")
 		d.SetId("")
 		return nil
 	}
@@ -1361,6 +1370,7 @@ func _resourceVmQemuRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("desc", config.Description)
 	d.Set("bios", config.Bios)
 	d.Set("onboot", config.Onboot)
+	d.Set("startup", config.Startup)
 	d.Set("tablet", config.Tablet)
 	d.Set("boot", config.Boot)
 	d.Set("bootdisk", config.BootDisk)
@@ -1505,8 +1515,7 @@ func _resourceVmQemuRead(d *schema.ResourceData, meta interface{}) error {
 	if err == nil {
 		for _, poolInfo := range pools["data"].([]interface{}) {
 			poolContent, _ := client.GetPoolInfo(poolInfo.(map[string]interface{})["poolid"].(string))
-			poolMembers := poolContent["data"].(map[string]interface{})["members"]
-			for _, member := range poolMembers.([]interface{}) {
+			for _, member := range poolContent["members"].([]interface{}) {
 				if member.(map[string]interface{})["type"] != "storage" {
 					if vmID == int(member.(map[string]interface{})["vmid"].(float64)) {
 						d.Set("pool", poolInfo.(map[string]interface{})["poolid"].(string))
