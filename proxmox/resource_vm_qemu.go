@@ -736,6 +736,10 @@ func resourceVmQemu() *schema.Resource {
 				Computed:    true,
 				Description: "Internal variable, true if any of the modified parameters requires a reboot to take effect.",
 			},
+			"default_nic": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"default_ipv4_address": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -1807,6 +1811,7 @@ func initConnInfo(
 	sshPort := "22"
 	sshHost := ""
 	sshHost6 := ""
+	default_nic := ""
 	// assume guest agent not running yet or not enabled
 	guestAgentRunning := false
 
@@ -1860,12 +1865,12 @@ func initConnInfo(
 						if addr.IsGlobalUnicast() && strings.Count(addr.String(), ":") > 2 {
 							log.Printf("[DEBUG][initConnInfo] Found IPv6 address: %s", addr.String())
 							sshHost6 = addr.String()
-
+							default_nic = iface.Name
 						}
 					}
 				}
 			}
-			if sshHost != "" || sshHost6 != ""{
+			if sshHost != "" || sshHost6 != "" {
 				break
 			}
 		}
@@ -1875,6 +1880,7 @@ func initConnInfo(
 
 	d.Set("default_ipv4_address", sshHost)
 	d.Set("default_ipv6_address", sshHost6)
+	d.Set("default_nic", default_nic_name)
 
 	if config.HasCloudInit() {
 		log.Print("[DEBUG][initConnInfo] vm has a cloud-init configuration")
