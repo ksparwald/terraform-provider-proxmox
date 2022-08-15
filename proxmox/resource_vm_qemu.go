@@ -1880,7 +1880,7 @@ func initConnInfo(
 
 	d.Set("default_ipv4_address", sshHost)
 	d.Set("default_ipv6_address", sshHost6)
-	d.Set("default_nic", default_nic_name)
+	d.Set("default_nic", default_nic)
 
 	if config.HasCloudInit() {
 		log.Print("[DEBUG][initConnInfo] vm has a cloud-init configuration")
