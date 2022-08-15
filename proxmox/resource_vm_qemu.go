@@ -416,6 +416,52 @@ func resourceVmQemu() *schema.Resource {
 							Optional: true,
 							Default:  0,
 						},
+						// Maximum I/O operations per second
+						"iops": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_max": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_max_length": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_rd": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_rd_max": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_rd_max_length": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_wr": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_wr_max": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"iops_wr_max_length": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
 						// Misc
 						"file": {
 							Type:     schema.TypeString,
@@ -754,7 +800,7 @@ func resourceVmQemuCreate(d *schema.ResourceData, meta interface{}) error {
 		Pool:         d.Get("pool").(string),
 		Bios:         d.Get("bios").(string),
 		Onboot:       d.Get("onboot").(bool),
-		Startup:	  d.Get("startup").(string),
+		Startup:      d.Get("startup").(string),
 		Tablet:       d.Get("tablet").(bool),
 		Boot:         d.Get("boot").(string),
 		BootDisk:     d.Get("bootdisk").(string),
@@ -1440,10 +1486,10 @@ func _resourceVmQemuRead(d *schema.ResourceData, meta interface{}) error {
 		if qemuDisk["cache"] == "" || qemuDisk["cache"] == nil {
 			qemuDisk["cache"] = "none"
 		}
-		if qemuDisk["backup"] == 0 {
-			qemuDisk["backup"] = false
-		} else if qemuDisk["backup"] == 1 {
-			qemuDisk["backup"] = true
+		if qemuDisk["backup"] == false {
+			qemuDisk["backup"] = 0
+		} else if qemuDisk["backup"] == true {
+			qemuDisk["backup"] = 1
 		}
 	}
 
